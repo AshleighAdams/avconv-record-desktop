@@ -73,30 +73,19 @@ echo $W"x"$H @ $X"+"$Y;
 sleep 1;
 echo "Recording..."
 
-if [[ "$1" == "gif" ]]; then
-	byzanz-record \
-		--cursor \
-		--delay=0 \
-		--duration=0 \
-		--x=$X \
-		--y=$Y \
-		--width=$W \
-		--height=$H \
-		--verbose \
-		"$HOME/Videos/Desktop $DATE.gif"
-else
-	AUDIO_DEVICE="-f pulse -i default -ac 2" # alsa may be slightly better
-#	AUDIO_CODEC="" #"-acodec libmp3lame"
-	VIDEO_DEVICE="-f x11grab -s ${W}x${H} -i $DISPLAY+$X,$Y"
-#	VIDEO_CODEC="-vcodec libx264"
-	QUALITY=0 # lower = better
-	FPS=30
-	
-	avconv \
-		-vsync 1 -async 1 \
-		$AUDIO_DEVICE $AUDIO_CODEC \
-		$VIDEO_DEVICE $VIDEO_CODEC \
-		-qscale $QUALITY \
-		"$HOME/Videos/Desktop $DATE.avi"
-fi
+AUDIO_DEVICE="-f pulse -i default -ac 2" # alsa may be slightly better
+#AUDIO_CODEC="" #"-acodec libmp3lame"
+VIDEO_DEVICE="-f x11grab -s ${W}x${H} -i $DISPLAY+$X,$Y"
+#VIDEO_CODEC="-vcodec libx264"
+QUALITY=0 # lower = better
+FPS=30
 
+avconv \
+	-vsync 1 -async 1 \
+	$AUDIO_DEVICE $AUDIO_CODEC \
+	$VIDEO_DEVICE $VIDEO_CODEC \
+	-qscale $QUALITY \
+	"$HOME/Videos/Desktop $DATE.avi"
+
+# to convert to gif:
+# avconv -i "input.avi" "output.gif"
