@@ -58,6 +58,7 @@ if [[ "$ANSWER" == "m" ]]; then
 	X=${SPLIT[2]}
 	Y=${SPLIT[3]}
 elif [[ "$ANSWER" == "w" ]]; then
+	echo "Please click on the (possibly root) window."
 	INFO=$(xwininfo -frame)
 	X=`echo "$INFO" | grep -Po "Absolute upper\\-left X:[ ]*\K[0-9\-]+"`
 	Y=`echo "$INFO" | grep -Po "Absolute upper\\-left Y:[ ]*\K[0-9\-]+"`
