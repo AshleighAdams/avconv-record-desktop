@@ -1,0 +1,101 @@
+#!/bin/bash
+
+#    avconv-record-desktop
+#    Copyright (C) 2015 Kate Adams <self@kateadams.eu>
+#
+#    This program is free software; you can redistribute it and/or modify
+#    it under the terms of the GNU General Public License as published by
+#    the Free Software Foundation; either version 2 of the License, or
+#    (at your option) any later version.
+#
+#    This program is distributed in the hope that it will be useful,
+#    but WITHOUT ANY WARRANTY; without even the implied warranty of
+#    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#    GNU General Public License for more details.
+#
+#    You should have received a copy of the GNU General Public License along
+#    with this program; if not, write to the Free Software Foundation, Inc.,
+#    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+
+DATE=`date --rfc-3339=seconds`
+
+read -p "Record [m]onitor or [w]indow: " ANSWER
+
+if [[ "$ANSWER" == "m" ]]; then
+	XRANDR_OUTPUT=`xrandr --query | egrep " connected"`
+	MONITORS_GEO=`echo "$XRANDR_OUTPUT" | egrep -o "[0-9]+x[0-9]+\+[0-9]+\+[0-9]+"`
+	MONITORS_NAMES=`echo "$XRANDR_OUTPUT" | egrep -o "[^ ]+ connected( primary)?"`
+	
+	readarray -t MONITORS_GEO <<<"$MONITORS_GEO"
+	readarray -t MONITORS_NAMES <<<"$MONITORS_NAMES"
+	
+	COUNT=${#MONITORS_GEO[@]}
+	SELECTION=0
+	
+	if [[ $COUNT == 0 ]]; then
+		echo "could not find a monitor via xrandr" > /dev/stderr
+		exit 1
+	elif [[ $COUNT == 1 ]]; then
+		SELECTION=0
+	else
+		for ((i=0; i<$COUNT; i++)); do
+			NAME=`echo ${MONITORS_NAMES[$i]} | sed "s/ connected//g"`
+			GEO=${MONITORS_GEO[$i]}
+			echo -e "\t$i: $NAME $GEO"
+		done
+		
+		read -p "Select which monitor: " SELECTION
+		
+		if [[ "${MONITORS_GEO[$SELECTION]}" == "" ]]; then
+			echo "error: selection out of range" > /dev/stderr
+			exit 1;
+		fi
+	fi
+	
+	SPLIT=(`echo ${MONITORS_GEO[$SELECTION]} | egrep -o "[0-9]+"`)
+	W=${SPLIT[0]}
+	H=${SPLIT[1]}
+	X=${SPLIT[2]}
+	Y=${SPLIT[3]}
+elif [[ "$ANSWER" == "w" ]]; then
+	INFO=$(xwininfo -frame)
+	X=`echo "$INFO" | grep -Po "Absolute upper\\-left X:[ ]*\K[0-9\-]+"`
+	Y=`echo "$INFO" | grep -Po "Absolute upper\\-left Y:[ ]*\K[0-9\-]+"`
+	W=`echo "$INFO" | grep -Po "Width:[ ]*\K[0-9\-]+"`
+	H=`echo "$INFO" | grep -Po "Height:[ ]*\K[0-9\-]+"`
+else
+	echo "unknown selection: $ANSWER" > /dev/stderr
+	exit 1
+fi
+
+echo $W"x"$H @ $X"+"$Y;
+sleep 1;
+echo "Recording..."
+
+if [[ "$1" == "gif" ]]; then
+	byzanz-record \
+		--cursor \
+		--delay=0 \
+		--duration=0 \
+		--x=$X \
+		--y=$Y \
+		--width=$W \
+		--height=$H \
+		--verbose \
+		"$HOME/Videos/Desktop $DATE.gif"
+else
+	AUDIO_DEVICE="-f pulse -i default -ac 2" # alsa may be slightly better
+#	AUDIO_CODEC="" #"-acodec libmp3lame"
+	VIDEO_DEVICE="-f x11grab -s ${W}x${H} -i $DISPLAY+$X,$Y"
+#	VIDEO_CODEC="-vcodec libx264"
+	QUALITY=0 # lower = better
+	FPS=30
+	
+	avconv \
+		-vsync 1 -async 1 \
+		$AUDIO_DEVICE $AUDIO_CODEC \
+		$VIDEO_DEVICE $VIDEO_CODEC \
+		-qscale $QUALITY \
+		"$HOME/Videos/Desktop $DATE.avi"
+fi
+
