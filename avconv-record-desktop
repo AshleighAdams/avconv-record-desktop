@@ -81,7 +81,7 @@ FPS=30
 AUDIO_DEVICE="-f pulse -i default -ac 2" # alsa may be slightly better
 AUDIO_CODEC="" #"-acodec libmp3lame"
 
-VIDEO_DEVICE="-f x11grab -s ${W}x${H} -i $DISPLAY+$X,$Y -framerate $FPS"
+VIDEO_DEVICE="-f x11grab -s ${W}x${H} -i $DISPLAY+$X,$Y -framerate $FPS -pix_fmt yuvj420p"
 VIDEO_CODEC="-vcodec libx264"
 QUALITY=0 # lower = better
 
@@ -93,13 +93,13 @@ ffmpeg \
 	$AUDIO_DEVICE \
 	$VIDEO_DEVICE \
 	-q:v $QUALITY \
-	"$HOME/Videos/Desktop $DATE.avi"
+	"$HOME/Videos/Desktop $DATE.mp4"
 
 ffmpeg \
-	-i "$HOME/Videos/Desktop $DATE.avi" \
+	-i "$HOME/Videos/Desktop $DATE.mp4" \
 	$VIDEO_CODEC \
 	$AUDIO_CODEC \
-	"$HOME/Videos/Desktop $DATE-transcode.avi"
+	"$HOME/Videos/Desktop $DATE-transcode.mp4"
 
 # to convert to gif:
 # avconv -i "input.avi" "output.gif"
