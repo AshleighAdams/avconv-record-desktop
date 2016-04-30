@@ -73,19 +73,33 @@ echo $W"x"$H @ $X"+"$Y;
 sleep 1;
 echo "Recording..."
 
-AUDIO_DEVICE="-f pulse -i default -ac 2" # alsa may be slightly better
-#AUDIO_CODEC="" #"-acodec libmp3lame"
-VIDEO_DEVICE="-f x11grab -s ${W}x${H} -i $DISPLAY+$X,$Y"
-#VIDEO_CODEC="-vcodec libx264"
-QUALITY=0 # lower = better
+#W=$(($W-1))
+#H=$(($H-1))
+
 FPS=30
 
-avconv \
-	-vsync 1 -async 1 \
-	$AUDIO_DEVICE $AUDIO_CODEC \
-	$VIDEO_DEVICE $VIDEO_CODEC \
-	-qscale $QUALITY \
+AUDIO_DEVICE="-f pulse -i default -ac 2" # alsa may be slightly better
+AUDIO_CODEC="" #"-acodec libmp3lame"
+
+VIDEO_DEVICE="-f x11grab -s ${W}x${H} -i $DISPLAY+$X,$Y -framerate $FPS"
+VIDEO_CODEC="-vcodec libx264"
+QUALITY=0 # lower = better
+
+OTHER_OPTS="" #"-thread_queue_size 512"
+
+ffmpeg \
+	$OTHER_OPTS \
+	-vsync cfr -async 1 \
+	$AUDIO_DEVICE \
+	$VIDEO_DEVICE \
+	-q:v $QUALITY \
 	"$HOME/Videos/Desktop $DATE.avi"
+
+ffmpeg \
+	-i "$HOME/Videos/Desktop $DATE.avi" \
+	$VIDEO_CODEC \
+	$AUDIO_CODEC \
+	"$HOME/Videos/Desktop $DATE-transcode.avi"
 
 # to convert to gif:
 # avconv -i "input.avi" "output.gif"
