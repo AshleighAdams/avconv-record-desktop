@@ -17,14 +17,14 @@
 #    with this program; if not, write to the Free Software Foundation, Inc.,
 #    51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
 
-DATE=`date --rfc-3339=seconds`
+DATE=$(date --rfc-3339=seconds)
 
-read -p "Record [m]onitor or [w]indow: " ANSWER
+read -rp "Record [m]onitor or [w]indow: " ANSWER
 
 if [[ "$ANSWER" == "m" ]]; then
-	XRANDR_OUTPUT=`xrandr --query | egrep " connected"`
-	MONITORS_GEO=`echo "$XRANDR_OUTPUT" | egrep -o "[0-9]+x[0-9]+\+[0-9]+\+[0-9]+"`
-	MONITORS_NAMES=`echo "$XRANDR_OUTPUT" | egrep -o "[^ ]+ connected( primary)?"`
+	XRANDR_OUTPUT=$(xrandr --query | egrep " connected")
+	MONITORS_GEO=$(echo "$XRANDR_OUTPUT" | egrep -o "[0-9]+x[0-9]+\+[0-9]+\+[0-9]+")
+	MONITORS_NAMES=$(echo "$XRANDR_OUTPUT" | egrep -o "[^ ]+ connected( primary)?")
 	
 	readarray -t MONITORS_GEO <<<"$MONITORS_GEO"
 	readarray -t MONITORS_NAMES <<<"$MONITORS_NAMES"
@@ -38,13 +38,14 @@ if [[ "$ANSWER" == "m" ]]; then
 	elif [[ $COUNT == 1 ]]; then
 		SELECTION=0
 	else
-		for ((i=0; i<$COUNT; i++)); do
-			NAME=`echo ${MONITORS_NAMES[$i]} | sed "s/ connected//g"`
+		for ((i=0; i < COUNT; i++)); do
+			#NAME=$(echo ${MONITORS_NAMES[$i]} | sed "s/ connected//g")
+			NAME=${MONITORS_NAMES[$i]// connected/}
 			GEO=${MONITORS_GEO[$i]}
 			echo -e "\t$i: $NAME $GEO"
 		done
 		
-		read -p "Select which monitor: " SELECTION
+		read -rp "Select which monitor: " SELECTION
 		
 		if [[ "${MONITORS_GEO[$SELECTION]}" == "" ]]; then
 			echo "error: selection out of range" > /dev/stderr
@@ -52,7 +53,7 @@ if [[ "$ANSWER" == "m" ]]; then
 		fi
 	fi
 	
-	SPLIT=(`echo ${MONITORS_GEO[$SELECTION]} | egrep -o "[0-9]+"`)
+	SPLIT=($(echo ${MONITORS_GEO[$SELECTION]} | egrep -o "[0-9]+"))
 	W=${SPLIT[0]}
 	H=${SPLIT[1]}
 	X=${SPLIT[2]}
@@ -60,10 +61,10 @@ if [[ "$ANSWER" == "m" ]]; then
 elif [[ "$ANSWER" == "w" ]]; then
 	echo "Please click on the (possibly root) window."
 	INFO=$(xwininfo -frame)
-	X=`echo "$INFO" | grep -Po "Absolute upper\\-left X:[ ]*\K[0-9\-]+"`
-	Y=`echo "$INFO" | grep -Po "Absolute upper\\-left Y:[ ]*\K[0-9\-]+"`
-	W=`echo "$INFO" | grep -Po "Width:[ ]*\K[0-9\-]+"`
-	H=`echo "$INFO" | grep -Po "Height:[ ]*\K[0-9\-]+"`
+	X=$(echo "$INFO" | grep -Po "Absolute upper\\-left X:[ ]*\K[0-9\-]+")
+	Y=$(echo "$INFO" | grep -Po "Absolute upper\\-left Y:[ ]*\K[0-9\-]+")
+	W=$(echo "$INFO" | grep -Po "Width:[ ]*\K[0-9\-]+")
+	H=$(echo "$INFO" | grep -Po "Height:[ ]*\K[0-9\-]+")
 else
 	echo "unknown selection: $ANSWER" > /dev/stderr
 	exit 1
@@ -78,11 +79,14 @@ echo "Recording..."
 
 FPS=30
 
+VIDEO_DEVICE="-f x11grab -s ${W}x${H} -i $DISPLAY+$X,$Y -framerate $FPS"
 AUDIO_DEVICE="-f pulse -i default -ac 2" # alsa may be slightly better
-AUDIO_CODEC="" #"-acodec libmp3lame"
 
-VIDEO_DEVICE="-f x11grab -s ${W}x${H} -i $DISPLAY+$X,$Y -framerate $FPS -pix_fmt yuvj420p"
-VIDEO_CODEC="-vcodec libx264"
+#AUDIO_CODEC="-acodec mp3on4"
+#VIDEO_CODEC="-vcodec libx264rgb -preset ultrafast -qp 0"
+
+TRANSCODE_VIDEO_CODEC="-vcodec libx264rgb -preset veryslow -crf 22"
+
 QUALITY=0 # lower = better
 
 OTHER_OPTS="" #"-thread_queue_size 512"
@@ -90,16 +94,16 @@ OTHER_OPTS="" #"-thread_queue_size 512"
 ffmpeg \
 	$OTHER_OPTS \
 	-vsync cfr -async 1 \
-	$AUDIO_DEVICE \
-	$VIDEO_DEVICE \
-	-q:v $QUALITY \
-	"$HOME/Videos/Desktop $DATE.mp4"
+	$AUDIO_DEVICE $AUDIO_CODEC \
+	$VIDEO_DEVICE $VIDEO_CODEC \
+	"$HOME/Videos/Desktop $DATE.avi"
 
 ffmpeg \
-	-i "$HOME/Videos/Desktop $DATE.mp4" \
-	$VIDEO_CODEC \
-	$AUDIO_CODEC \
-	"$HOME/Videos/Desktop $DATE-transcode.mp4"
+	-i "$HOME/Videos/Desktop $DATE.avi" \
+	$TRANSCODE_VIDEO_CODEC \
+	$TRANCODE_AUDIO_CODEC \
+	-q:v $QUALITY \
+	"$HOME/Videos/Desktop $DATE-transcode.avi"
 
 # to convert to gif:
 # avconv -i "input.avi" "output.gif"
