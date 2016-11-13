@@ -77,15 +77,18 @@ echo "Recording..."
 #W=$(($W-1))
 #H=$(($H-1))
 
-FPS=30
+FPS=60
 
-VIDEO_DEVICE="-f x11grab -s ${W}x${H} -i $DISPLAY+$X,$Y -framerate $FPS"
+VIDEO_DEVICE="-f x11grab -s ${W}x${H} -i $DISPLAY+$X,$Y -framerate $FPS -r $FPS"
 AUDIO_DEVICE="-f pulse -i default -ac 2" # alsa may be slightly better
 
-#AUDIO_CODEC="-acodec mp3on4"
+AUDIO_CODEC="-acodec aac"
 #VIDEO_CODEC="-vcodec libx264rgb -preset ultrafast -qp 0"
 
+# some might want libx264 -pix_fmt yuvj444p
 TRANSCODE_VIDEO_CODEC="-vcodec libx264rgb -preset veryslow -crf 22"
+TRANCODE_AUDIO_CODEC="-acodec copy"
+VIDEO_CODEC="-vcodec libx264rgb -crf 0 -preset ultrafast" #rgb
 
 QUALITY=0 # lower = better
 
@@ -94,16 +97,17 @@ OTHER_OPTS="" #"-thread_queue_size 512"
 ffmpeg \
 	$OTHER_OPTS \
 	-vsync cfr -async 1 \
+	-r $FPS \
 	$AUDIO_DEVICE $AUDIO_CODEC \
 	$VIDEO_DEVICE $VIDEO_CODEC \
 	"$HOME/Videos/Desktop $DATE.avi"
 
-ffmpeg \
+time ffmpeg \
 	-i "$HOME/Videos/Desktop $DATE.avi" \
 	$TRANSCODE_VIDEO_CODEC \
 	$TRANCODE_AUDIO_CODEC \
 	-q:v $QUALITY \
-	"$HOME/Videos/Desktop $DATE-transcode.avi"
+	"$HOME/Videos/Desktop $DATE-transcode.mkv"
 
 # to convert to gif:
 # avconv -i "input.avi" "output.gif"
