@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #    avconv-record-desktop
-#    Copyright (C) 2015 Kate Adams <self@kateadams.eu>
+#    Copyright (C) 2015 Ashleigh Adams <ashleigh.k.adams@gmail.com>
 #
 #    This program is free software; you can redistribute it and/or modify
 #    it under the terms of the GNU General Public License as published by
@@ -83,14 +83,11 @@ VIDEO_DEVICE="-f x11grab -s ${W}x${H} -i $DISPLAY+$X,$Y -framerate $FPS -r $FPS"
 AUDIO_DEVICE="-f pulse -i default -ac 2" # alsa may be slightly better
 
 AUDIO_CODEC="-acodec aac"
-#VIDEO_CODEC="-vcodec libx264rgb -preset ultrafast -qp 0"
+VIDEO_CODEC="-vcodec libx264rgb -crf 0 -preset ultrafast"
 
 # some might want libx264 -pix_fmt yuvj444p
 TRANSCODE_VIDEO_CODEC="-vcodec libx264rgb -preset veryslow -crf 22"
 TRANCODE_AUDIO_CODEC="-acodec copy"
-VIDEO_CODEC="-vcodec libx264rgb -crf 0 -preset ultrafast" #rgb
-
-QUALITY=0 # lower = better
 
 OTHER_OPTS="" #"-thread_queue_size 512"
 
@@ -106,8 +103,7 @@ time ffmpeg \
 	-i "$HOME/Videos/Desktop $DATE.avi" \
 	$TRANSCODE_VIDEO_CODEC \
 	$TRANCODE_AUDIO_CODEC \
-	-q:v $QUALITY \
-	"$HOME/Videos/Desktop $DATE-transcode.mkv"
+	"$HOME/Videos/Desktop $DATE-transcode.mov"
 
 # to convert to gif:
 # avconv -i "input.avi" "output.gif"
